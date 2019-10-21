@@ -16,8 +16,11 @@ namespace INPTPZ1
         private static List<ComplexNumber> roots;
         private static Polynome polynome, derivatedPolynom;
         private static Color[] colors;
+        private const int BRIGHTNESS = 30;
+        private const double TOLERANCE = 0.5;
+        private const double MINIMUM = 0.01;
 
-        private static void Initialization(int widthParameter, int heightParameter)
+        private static void Initialize(int widthParameter, int heightParameter)
         {
             width = widthParameter;
             height = heightParameter;
@@ -58,7 +61,7 @@ namespace INPTPZ1
             return polynome;
         }
 
-        private static void CheckComplexNumber(ComplexNumber complexNumber)
+        private static void CheckZeroComplexNumber(ComplexNumber complexNumber)
         {
             if (complexNumber.Re == 0)
                 complexNumber.Re = 0.0001;
@@ -66,7 +69,7 @@ namespace INPTPZ1
                 complexNumber.Im = 0.0001;
         }
 
-        private static void MakeImage(int numberOfRoots, int iteration, int xCoordinate, int yCoordinate)
+        private static void MakePixelOfImage(int numberOfRoots, int iteration, int xCoordinate, int yCoordinate)
         {
             Color color = colors[numberOfRoots % colors.Length];
             int red = Math.Min(Math.Max(0, color.R - iteration * 2), 255);
@@ -76,35 +79,19 @@ namespace INPTPZ1
             bitmapPicture.SetPixel(yCoordinate, xCoordinate, color);
         }
 
-        private static bool CheckArguments(string input)
-        {
-            
-            return true;
-        }
-
         static void Main(string[] args)
         {
             try
             {
                 int inputNumber = int.Parse(args[0]);
-                Initialization(inputNumber, inputNumber);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Console.WriteLine("ArgumentNullException");
-            }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine("ArgumentException");
-            }
-            catch (FormatException ex)
-            {
-                Console.WriteLine("FormatException");
-            }
+                if (inputNumber<=0)
+                {
+                    Console.WriteLine("The input argument is the image size. Must be greater than zero.");
+                    return;
+                }
 
+                Initialize(inputNumber, inputNumber);
 
-            try
-            {
                 for (int xCoordinate = 0; xCoordinate < width; xCoordinate++)
                 {
                     for (int yCoordinate = 0; yCoordinate < height; yCoordinate++)
@@ -115,28 +102,38 @@ namespace INPTPZ1
                             Im = yMin + xCoordinate * yStep
                         };
 
-                        CheckComplexNumber(complexNumber);
+                        CheckZeroComplexNumber(complexNumber);
 
                         int iteration = 0;
                         FinderSolutionByNewtonIteration(ref iteration, ref complexNumber);
 
                         var numberOfRoots = 0;
-                        FinderSolutionRoot(ref numberOfRoots, complexNumber);
+                        FinderSolutionRoot(complexNumber, ref numberOfRoots);
 
-                        MakeImage(numberOfRoots, iteration, xCoordinate, yCoordinate);
+                        MakePixelOfImage(numberOfRoots, iteration, xCoordinate, yCoordinate);
                     }
                 }
                 bitmapPicture.Save("../../../out.png");
             }
+            catch (ArgumentNullException ex)
+            {
+                Console.WriteLine("ArgumentNullException \n"+ex);
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine("ArgumentException \n" + ex);
+            }
+            catch (FormatException ex)
+            {
+                Console.WriteLine("FormatException \n" + ex);
+            }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception");
-            }
-            
-
+                Console.WriteLine("Exception \n" + ex);
+            }            
         }
 
-        private static void FinderSolutionRoot(ref int numberOfRoots, ComplexNumber complexNumber)
+        private static void FinderSolutionRoot(ComplexNumber complexNumber, ref int numberOfRoots)
         {
             bool knownRoot = false;
 
@@ -144,7 +141,8 @@ namespace INPTPZ1
             {
                 double realParth = Math.Pow(complexNumber.Re - roots[i].Re, 2);
                 double imaginaryParth = Math.Pow(complexNumber.Im - roots[i].Im, 2);
-                if (realParth + imaginaryParth <= 0.01)
+                
+                if (realParth + imaginaryParth <= MINIMUM)
                 {
                     knownRoot = true;
                     numberOfRoots = i;
@@ -159,12 +157,13 @@ namespace INPTPZ1
 
         private static void FinderSolutionByNewtonIteration(ref int iteration, ref ComplexNumber complexNumber)
         {
-            for (int i = 0; i < 30; i++)
+            
+            for (int i = 0; i < BRIGHTNESS; i++)
             {
                 var diff = polynome.Eval(complexNumber).Divide(derivatedPolynom.Eval(complexNumber));
                 complexNumber = complexNumber.Subtract(diff);
 
-                if (Math.Pow(diff.Re, 2) + Math.Pow(diff.Im, 2) >= 0.5)
+                if (Math.Pow(diff.Re, 2) + Math.Pow(diff.Im, 2) >= TOLERANCE)
                 {
                     i--;
                 }
